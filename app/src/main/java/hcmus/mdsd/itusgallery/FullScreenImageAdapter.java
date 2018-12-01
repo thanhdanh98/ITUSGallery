@@ -93,6 +93,10 @@ public class FullScreenImageAdapter extends PagerAdapter {
         notifyDataSetChanged();
     }
 
+    public void callWhenDataChanged(){
+        notifyDataSetChanged();
+    }
+
     @Override
     public int getItemPosition(Object object) {
         if (_imagePaths.contains(object)) {

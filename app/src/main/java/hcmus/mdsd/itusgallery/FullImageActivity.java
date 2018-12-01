@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -26,6 +27,7 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.media.ExifInterface;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.menu.MenuView;
@@ -644,34 +646,46 @@ public class FullImageActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK) {
                 assert result != null;
                 Uri resultUri = result.getUri();
-                ImageView imageView = new ImageView(this);
-                imageView.setImageURI(null);
-                imageView.setImageURI(resultUri);
-                imageView.setDrawingCacheEnabled(true);
-                Bitmap b = imageView.getDrawingCache();
-                MediaStore.Images.Media.insertImage(getContentResolver(), b, nameImage + "_crop", "");
-//                File storageLoc = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES); //context.getExternalFilesDir(null);
-//                File file = new File(storageLoc, "tan" );
-//                try{
-//                    FileOutputStream fos = new FileOutputStream(file);
-//                    b.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-//                    fos.close();
-//                    scanFile(this, Uri.fromFile(file));
-//                } catch (FileNotFoundException e) {
-//                    e.printStackTrace();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-                PicturesActivity.images.add(nameImage + "_crop");
-//                Glide.with(getApplicationContext()).load(PicturesActivity.images.get(0))
-//                        .apply(new RequestOptions().placeholder(null).fitCenter())
-//                        .into(imageView);
-
+                Bitmap b = null;
+                try {
+                    b = MediaStore.Images.Media.getBitmap(getContentResolver(),resultUri);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                insertCroppedImageToMedia(getContentResolver(),b);
+                Toast.makeText(context, "Image cropped completely", Toast.LENGTH_SHORT).show();
             } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
                 Exception error = result.getError();
             }
             super.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    /**
+     * Thêm file bitmap sau khi cắt vào MediaStore
+     * @param contentResolver Content Resolver
+     * @param bitmap File bitmap sau khi crop
+     */
+    public void insertCroppedImageToMedia(ContentResolver contentResolver, Bitmap bitmap) {
+        //Thêm file vào Media Store
+        String photoUriStr = MediaStore.Images.Media.insertImage(contentResolver, bitmap, "" , "");
+        //Lấy URI của file vừa thêm vào
+        Uri photoUri = Uri.parse(photoUriStr);
+        //Lấy thời gian tại hiện tại
+        long now = System.currentTimeMillis() / 1000;
+        //Tạo ContentValues lưu các thông tin về thời gian
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.DATE_ADDED, now);
+        values.put(MediaStore.Images.Media.DATE_MODIFIED, now);
+        values.put(MediaStore.Images.Media.DATE_TAKEN, now);
+        //Update nội dung của ContentValues
+        contentResolver.update(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values,
+                MediaStore.Images.Media._ID + "=?", new String [] { ContentUris.parseId(photoUri) + "" });
+        //Scan lại file
+        Intent scanFileIntent = new Intent(
+                Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, photoUri);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(scanFileIntent);
+        adapter.callWhenDataChanged();
     }
 
     public boolean CheckTime(int curHour, int curMinute, int hourStart, int minuteStart, int hourEnd, int minuteEnd) {
