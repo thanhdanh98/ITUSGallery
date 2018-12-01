@@ -14,6 +14,8 @@ import java.util.ArrayList;
 
 public class FavoriteActivity extends Fragment{
     View favorite;
+    //MyPrefs
+    MyPrefs myPrefs;
     public static ArrayList<String> favoriteImages = new ArrayList<>();
     public static FavoriteActivity newInstance() {
         return new FavoriteActivity();
@@ -21,13 +23,19 @@ public class FavoriteActivity extends Fragment{
     @Override
     public View onCreateView(LayoutInflater inflater,ViewGroup container,Bundle savedInstanceState) {
         favorite = inflater.inflate(R.layout.activity_favorite,container, false);
+        //Khởi tạo myPrefs
+        myPrefs = new MyPrefs(getContext());
         if (null != favoriteImages && !favoriteImages.isEmpty()) {
             GridView favoriteGallery = favorite.findViewById(R.id.favoriteGalleryGridView);
             favoriteGallery.setAdapter(new ImageAdapter(FavoriteActivity.super.getActivity(), favoriteImages));
+            //Lựa chọn số cột để hiển thị, load từ myPrefs
+            Integer[] columns = myPrefs.getNumberOfColumns();
             int screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
             int screenHeight = Resources.getSystem().getDisplayMetrics().heightPixels;
             if (screenWidth > screenHeight) {
-                favoriteGallery.setNumColumns(6);
+                favoriteGallery.setNumColumns(columns[1]);
+            } else {
+                favoriteGallery.setNumColumns(columns[0]);
             }
             favoriteGallery.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 

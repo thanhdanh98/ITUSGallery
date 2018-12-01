@@ -45,12 +45,14 @@ public class SubAlbumFolderActivity extends AppCompatActivity {
         GridView gallery = findViewById(R.id.galleryGridView);
         //Gọi hàm setAdapter, truyền vào class gửi và danh sách tập tin
         gallery.setAdapter(new ImageAdapter(SubAlbumFolderActivity.this, arrayList));
-        //Lựa chọn số cột để hiển thị, mặc định là 4 (trong layout), màn hình ngang thì 6 cột
-        int screenWidth =  Resources.getSystem().getDisplayMetrics().widthPixels;
-        int screenHeight =  Resources.getSystem().getDisplayMetrics().heightPixels;
-        if (screenWidth > screenHeight)
-        {
-            gallery.setNumColumns(6);
+        //Lựa chọn số cột để hiển thị, load từ myPrefs
+        Integer[] columns = myPrefs.getNumberOfColumns();
+        int screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
+        int screenHeight = Resources.getSystem().getDisplayMetrics().heightPixels;
+        if (screenWidth > screenHeight) {
+            gallery.setNumColumns(columns[1]);
+        } else {
+            gallery.setNumColumns(columns[0]);
         }
         //Gán sự kiện click cho mỗi ảnh
         gallery.setOnItemClickListener(new AdapterView.OnItemClickListener() {
