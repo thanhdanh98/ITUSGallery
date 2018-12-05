@@ -1,12 +1,14 @@
 package hcmus.mdsd.itusgallery;
 
 import android.app.Dialog;
+import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -19,6 +21,11 @@ public class PasswordActivity extends AppCompatActivity {
     TextInputLayout txtPassword;
     MyPrefs myPrefs;
     Integer passMode;
+
+    private Toolbar toolBar;
+
+    FragmentTransaction ft;
+    PrivatePicturesActivity private_pictures;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +44,13 @@ public class PasswordActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(checkPassword()){
                     if(0 == passMode){
-                        startActivity(new Intent(PasswordActivity.this,MainActivity.class));
+                        Intent intent = getIntent();
+                        String activity = intent.getStringExtra("SwitchTo");
+
+                        // so sánh để chuyển fragment cho đúng
+                        Intent i = new Intent (new Intent(PasswordActivity.this,MainActivity.class));
+                        i.putExtra("SwitchTo", activity);
+                        startActivity(i);
                         finish();
                     }
                     else if(1 == passMode){

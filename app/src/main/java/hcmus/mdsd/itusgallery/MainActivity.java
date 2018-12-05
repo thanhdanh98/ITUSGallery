@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     AlbumActivity album;
     CloudStorageActivity cloud;
     FavoriteActivity favorite;
+    PrivatePicturesActivity private_pictures;
 
     private int codeOfFragment;
     public static String _name_cloud ="";
@@ -77,7 +78,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
+        Intent intent = getIntent();
+        String activity = intent.getStringExtra("SwitchTo");
+
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
+        if (activity.equals("MainActivity"))
+        {
+            Objects.requireNonNull(getSupportActionBar()).setTitle("Images");
+        }
+        else
+        {
+            Objects.requireNonNull(getSupportActionBar()).setTitle("Private Pictures");
+        }
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
@@ -110,6 +122,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     ft.commit();
                     break;
                 }
+                case R.id.nav_private_pictures:{
+                    toolBar.setTitle("Private Pictures");
+                    ft = getFragmentManager().beginTransaction();
+                    private_pictures = PrivatePicturesActivity.newInstance();
+                    ft.replace(R.id.content_frame, private_pictures);
+                    ft.commit();
+                    break;
+                }
                 default:{
                     toolBar.setTitle("Images");
                     ft = getFragmentManager().beginTransaction();
@@ -122,11 +142,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             codeOfFragment = id;
         }
         else {
-            ft = getFragmentManager().beginTransaction();
-            pictures = PicturesActivity.newInstance();
-            ft.replace(R.id.content_frame, pictures);
-            ft.commit();
-            toolBar.setTitle("Images");
+            // Kiểm tra để chuyển về đúng fragment
+            if (activity.equals("MainActivity")) {
+                ft = getFragmentManager().beginTransaction();
+                pictures = PicturesActivity.newInstance();
+                ft.replace(R.id.content_frame, pictures);
+                ft.commit();
+                toolBar.setTitle("Images");
+            }
+            else {
+                ft = getFragmentManager().beginTransaction();
+                private_pictures = PrivatePicturesActivity.newInstance();
+                ft.replace(R.id.content_frame, private_pictures);
+                ft.commit();
+                toolBar.setTitle("Private Pictures");
+            }
         }
     }
 
@@ -146,7 +176,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int id = item.getItemId();
         if (id == R.id.action_search) {
             // perform SEARCH operations...
-            Toast.makeText(getApplicationContext(), "This function is still umder development", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "This function is still under development", Toast.LENGTH_SHORT).show();
             return true;
         }
         return false;
@@ -190,6 +220,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             ft.replace(R.id.content_frame, cloud);
             ft.commit();
             codeOfFragment = R.id.nav_cloud;
+        }
+        else if (id == R.id.nav_private_pictures) {
+            String password = myPrefs.getPassword();
+
+            if (password.matches("")) {
+                toolBar.setTitle("Private Pictures");
+                ft = getFragmentManager().beginTransaction();
+                private_pictures = PrivatePicturesActivity.newInstance();
+                ft.replace(R.id.content_frame, private_pictures);
+                ft.commit();
+                codeOfFragment = R.id.nav_private_pictures;
+            } else {
+                String activity = "PrivatePicturesActivity";
+
+                myPrefs.setPassMode(0);
+
+                Intent i = new Intent(MainActivity.this, PasswordActivity.class);
+                i.putExtra("SwitchTo", activity); // Lưu vị trí để chuyển sang activity kế
+                startActivity(i);
+            }
         }
         else if (id == R.id.nav_settings) {
             startActivity(new Intent(MainActivity.this,SettingsActivity.class));

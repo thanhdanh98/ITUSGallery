@@ -19,6 +19,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
@@ -57,7 +58,10 @@ import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -78,7 +82,7 @@ public class FullImageActivity extends AppCompatActivity {
     TextView txtDateModified;
     //Vị trí hiện tại của ảnh trong danh sách file
     int position;
-    //Tên của file ảnh hiện tại
+    //Đường dẫn của file ảnh hiện tại
     String currentImage;
     //Bottom Navigation View, 4 nút Edit/Crop/Share/Delete
     BottomNavigationView mainNav;
@@ -102,12 +106,12 @@ public class FullImageActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         context = FullImageActivity.this;
         //Khởi tạo myprefs
         myPrefs = new MyPrefs(this);
         //Màn hình fullscreen
         decorView = getWindow().getDecorView();
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         //Set layout chính
         setContentView(R.layout.activity_full_image);
@@ -275,19 +279,19 @@ public class FullImageActivity extends AppCompatActivity {
                                     currentImage = PicturesActivity.images.get(position);
                                     viewPager.setCurrentItem(position);
                                 }
-                                if (null != FavoriteActivity.favoriteImages && !FavoriteActivity.favoriteImages.isEmpty()) {
-                                    // Nếu ảnh đang chiếu có trong số ảnh được yêu thích thì chuyển tim sang màu đỏ
-                                    if (FavoriteActivity.favoriteImages.contains(currentImage)) {
-                                        menuItem.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_favorite_24_clicked));
-                                        favoritedImage = true;
-                                    } else {
-                                        menuItem.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_favorite_24));
-                                        favoritedImage = false;
-                                    }
-                                } else {
-                                    menuItem.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_favorite_24));
-                                    favoritedImage = false;
-                                }
+//                                if (null != FavoriteActivity.favoriteImages && !FavoriteActivity.favoriteImages.isEmpty()) {
+//                                    // Nếu ảnh đang chiếu có trong số ảnh được yêu thích thì chuyển tim sang màu đỏ
+//                                    if (FavoriteActivity.favoriteImages.contains(currentImage)) {
+//                                        menuItem.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_favorite_24_clicked));
+//                                        favoritedImage = true;
+//                                    } else {
+//                                        menuItem.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_favorite_24));
+//                                        favoritedImage = false;
+//                                    }
+//                                } else {
+//                                    menuItem.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_favorite_24));
+//                                    favoritedImage = false;
+//                                }
 
                             }
                         });
@@ -489,10 +493,37 @@ public class FullImageActivity extends AppCompatActivity {
             this.startActivity(Intent.createChooser(intent, "Set as:"));
             return true;
         } else if (id == R.id.action_print) {
-            Toast.makeText(context, "This function is still umder development", Toast.LENGTH_SHORT).show();
+            File lockPicture = new File(currentImage);
+            File folder = new File(Environment.getExternalStorageDirectory(), "/ITUSGallery");
+
+            boolean success = true;
+            if (!folder.exists()) {
+                success = folder.mkdirs();
+            }
+            if (success) {
+                //Toast.makeText(context, "Có", Toast.LENGTH_SHORT).show();
+            }
+            else {
+                //Toast.makeText(context, "Không", Toast.LENGTH_SHORT).show();
+            }
+
+            try {
+                MoveFile(lockPicture, folder);
+                File file = new File(folder.getAbsolutePath() + "/" + lockPicture.getName());
+
+                // Đổi file extension
+                String temp = folder.getAbsolutePath() + "/" + lockPicture.getName();
+                int IndexOfDot; // Vị trí của dấu chấm (type, ví dụ .png .jpg)
+                IndexOfDot = temp.lastIndexOf(".");
+                temp = temp.substring(0, IndexOfDot - 1) + '#' + temp.substring(IndexOfDot + 1);
+
+                File newName = new File(temp);
+                file.renameTo(newName);
+            } catch(IOException ex) {
+                //Do something with the exception
+            }
             return true;
         } else if (id == R.id.action_details) {
-            // perform INFORMATION operations...
             String returnUri = currentImage;
             File file = new File(returnUri);
 
@@ -731,8 +762,73 @@ public class FullImageActivity extends AppCompatActivity {
                         nightmode = false;
                     }
                 }
+            } else {
+                nightmode = false;
             }
         }
         return nightmode;
+    }
+
+    private void MoveFile(File file, File dir) throws IOException {
+        File newFile = new File(dir, file.getName());
+        FileChannel outputChannel = null;
+        FileChannel inputChannel = null;
+        try {
+            outputChannel = new FileOutputStream(newFile).getChannel();
+            inputChannel = new FileInputStream(file).getChannel();
+            inputChannel.transferTo(0, inputChannel.size(), outputChannel);
+            inputChannel.close();
+
+            // -------------- XOÁ ẢNH -----------------
+            final File photoFile = new File(currentImage);
+
+            String selection = MediaStore.Images.Media.DATA + " = ?";
+            String[] selectionArgs = new String[]{photoFile.getAbsolutePath()};
+
+            ContentResolver contentResolver = getContentResolver();
+            Cursor c = contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    new String[]{MediaStore.Images.Media._ID}, selection, selectionArgs, null);
+            if (c != null) {
+                if (c.moveToFirst()) {
+                    // Tìm thấy ID. Xoá ảnh dựa nhờ content provider
+                    long id = c.getLong(c.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
+                    Uri deleteUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+                    contentResolver.delete(deleteUri, null, null);
+                }
+                c.close();
+            }
+            // Nếu ảnh được yêu thích thì khi xoá ảnh phải xoá trong danh sách các ảnh được yêu thích luôn
+            if (favoritedImage) {
+                FavoriteActivity.favoriteImages.remove(currentImage);
+                SharedPreferences sharedPreferences = PreferenceManager
+                        .getDefaultSharedPreferences(getApplicationContext());
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                Gson gson = new Gson();
+                String json = gson.toJson(FavoriteActivity.favoriteImages);
+                editor.putString("savedFavoriteImages", json);
+                editor.apply();
+            }
+            //Số ảnh còn lại trước khi xóa
+            int currentNumberOfPictures = PicturesActivity.images.size();
+            if (currentNumberOfPictures == 1) {
+                adapter.removeItem(position);
+                finish();
+            } else if (position == currentNumberOfPictures) {
+                position--;
+                adapter.removeItem(position);
+                currentImage = PicturesActivity.images.get(position);
+                viewPager.setCurrentItem(position);
+            } else {
+                adapter.removeItem(position);
+                currentImage = PicturesActivity.images.get(position);
+                viewPager.setCurrentItem(position);
+            }
+            // ------------------- KẾT THÚC XOÁ ẢNH -------------------
+
+        } finally {
+            if (inputChannel != null) inputChannel.close();
+            if (outputChannel != null) outputChannel.close();
+        }
+
     }
 }

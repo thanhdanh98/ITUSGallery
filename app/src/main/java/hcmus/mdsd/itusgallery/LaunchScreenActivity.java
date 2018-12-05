@@ -83,8 +83,13 @@ public class LaunchScreenActivity extends AppCompatActivity {
             if (password.matches("")) {
                 startActivity(new Intent(LaunchScreenActivity.this, MainActivity.class));
             } else {
+                String activity = "MainActivity";
+
                 myPrefs.setPassMode(0);
-                startActivity(new Intent(LaunchScreenActivity.this, PasswordActivity.class));
+
+                Intent i = new Intent(LaunchScreenActivity.this, PasswordActivity.class);
+                i.putExtra("SwitchTo", activity); // Lưu vị trí để chuyển sang activity kế
+                startActivity(i);
             }
             finish();
         }
