@@ -28,13 +28,36 @@ public class SetPasswordActivity extends AppCompatActivity {
         txtPassword = findViewById(R.id.txt_Password);
         txtRetypePassword = findViewById(R.id.txt_RetypePassword);
 
+        Intent intent = getIntent();
+        final String From = intent.getStringExtra("From"); // Lấy thông tin từ activity trước (nếu đến từ FullImageActivity thì điều hướng lại cho đúng
+
+        // Lấy những thông tin để trở về FullImageActivity
+        final int position = intent.getIntExtra("id", 0);
+        final String currentImage = intent.getStringExtra("path");
+        PicturesActivity.images = intent.getStringArrayListExtra("allPath");
+
         btnConfirm = findViewById(R.id.btn_confirm);
         btnConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(confirmPassword()){
-                    startActivity(new Intent(SetPasswordActivity.this,MainActivity.class));
-                    startActivity(new Intent(SetPasswordActivity.this,SettingsActivity.class));
+                    if (From == null) // Nếu k đến từ FullImageActivity
+                    {
+                        startActivity(new Intent(SetPasswordActivity.this,MainActivity.class));
+                        startActivity(new Intent(SetPasswordActivity.this,SettingsActivity.class));
+                    }
+                    else // Nếu đến từ FullImageActivity thì sẽ chỉ chuyển đến MainActivity
+                    {
+                        startActivity(new Intent(SetPasswordActivity.this,MainActivity.class));
+
+                        // Chuyển về FullImageActivity của ảnh ban đầu
+                        Intent i = new Intent(SetPasswordActivity.this, FullImageActivity.class);
+                        //Gửi vị trí ảnh hiện tại, tên ảnh và cả mảng file
+                        i.putExtra("id", position);
+                        i.putExtra("path", currentImage);
+                        i.putExtra("allPath", PicturesActivity.images);
+                        startActivity(i);
+                    }
                     finish();
                 }
             }
@@ -44,8 +67,21 @@ public class SetPasswordActivity extends AppCompatActivity {
         btnCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(SetPasswordActivity.this,MainActivity.class));
-                startActivity(new Intent(SetPasswordActivity.this,SettingsActivity.class));
+                if (From == null)
+                {
+                    startActivity(new Intent(SetPasswordActivity.this,MainActivity.class));
+                    startActivity(new Intent(SetPasswordActivity.this,SettingsActivity.class));
+                }
+                else
+                {
+                    startActivity(new Intent(SetPasswordActivity.this,MainActivity.class));
+                    Intent i = new Intent(SetPasswordActivity.this, FullImageActivity.class);
+                    //Gửi vị trí ảnh hiện tại, tên ảnh và cả mảng file
+                    i.putExtra("id", position);
+                    i.putExtra("path", currentImage);
+                    i.putExtra("allPath", PicturesActivity.images);
+                    startActivity(i);
+                }
                 finish();
             }
         });

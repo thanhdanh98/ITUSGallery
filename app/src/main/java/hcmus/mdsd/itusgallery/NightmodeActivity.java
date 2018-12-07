@@ -208,7 +208,7 @@ public class NightmodeActivity extends AppCompatActivity {
                 nightmode = false;
             }
         }
-        else{
+        else{ //if(hourStart > hourEnd)
             if(hourEnd >= curHour || curHour >= hourStart){
                 if(hourStart == curHour){
                     if(minuteStart > curMinute){
@@ -220,6 +220,9 @@ public class NightmodeActivity extends AppCompatActivity {
                         nightmode = false;
                     }
                 }
+            }
+            else{
+                nightmode = false;
             }
         }
         return nightmode;

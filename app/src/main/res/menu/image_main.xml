@@ -7,6 +7,12 @@
     tools:ignore="AlwaysShowAction,HardcodedText">
 
     <item
+        android:id="@+id/action_lock"
+        android:icon="@drawable/round_lock_24"
+        android:orderInCategory="120"
+        app:showAsAction="always"
+        android:title="Lock"/>
+    <item
         android:id="@+id/action_favorite"
         android:icon="@drawable/round_favorite_24"
         android:orderInCategory="140"

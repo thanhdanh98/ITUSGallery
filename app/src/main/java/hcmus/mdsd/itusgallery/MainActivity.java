@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         String activity = intent.getStringExtra("SwitchTo");
 
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
-        if (activity.equals("MainActivity"))
+        if (activity == null)
         {
             Objects.requireNonNull(getSupportActionBar()).setTitle("Images");
         }
@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
         else {
             // Kiểm tra để chuyển về đúng fragment
-            if (activity.equals("MainActivity")) {
+            if (activity == null) {
                 ft = getFragmentManager().beginTransaction();
                 pictures = PicturesActivity.newInstance();
                 ft.replace(R.id.content_frame, pictures);

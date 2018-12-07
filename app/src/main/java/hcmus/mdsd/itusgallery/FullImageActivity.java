@@ -56,11 +56,15 @@ import com.google.gson.Gson;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.channels.FileChannel;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -76,6 +80,7 @@ public class FullImageActivity extends AppCompatActivity {
     public static StorageReference storageRef;
     //Thuộc tính ảnh được yêu thích hay không
     static boolean favoritedImage = false;
+    static boolean lockedImage = false;
     //Toolbar
     Toolbar toolBar;
     //TextView hiển thị ngày chỉnh sửa cuối
@@ -95,7 +100,7 @@ public class FullImageActivity extends AppCompatActivity {
     @SuppressLint("SimpleDateFormat")
     SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy HH:mm"); // Tạo format date để lưu Date
     String nameImage;
-    MenuItem menuItem;
+    MenuItem menuItem; // Nút favorite
     //Tọa độ trước và sau khi chạm màn hình
     private float x1, x2, y1, y2;
     private ViewPager viewPager;
@@ -341,13 +346,15 @@ public class FullImageActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; add items to the action bar
         getMenuInflater().inflate(R.menu.image_main, menu);
+
+        // ---------------- CHỈNH ICON FAVORITE -----------------
         favoritedImage = false;
-        String abc = currentImage;
+        String current = currentImage;
         menuItem = menu.findItem(R.id.action_favorite);
         // Nếu tồn tại đường dẫn của ảnh trong favoriteImages
         if (null != FavoriteActivity.favoriteImages && !FavoriteActivity.favoriteImages.isEmpty()) {
             // Nếu ảnh đang chiếu có trong số ảnh được yêu thích thì chuyển tim sang màu đỏ
-            if (FavoriteActivity.favoriteImages.contains(abc)) {
+            if (FavoriteActivity.favoriteImages.contains(current)) {
                 //MenuItem menuItem = menu.findItem(R.id.action_favorite);
                 menuItem.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_favorite_24_clicked));
                 favoritedImage = true; // Đánh dấu ảnh đang chiếu đã được yêu thích
@@ -359,6 +366,30 @@ public class FullImageActivity extends AppCompatActivity {
             menuItem.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_favorite_24));
             favoritedImage = false;
         }
+        // --------------KẾT THÚC CHỈNH ICON FAVORITE ---------
+
+
+        // ------------------ CHỈNH ICON LOCK -----------------
+        Intent intent = getIntent();
+        // Lấy thông tin từ activity trước (dùng để kiểm tra có phải từ PrivatePicturesActivity hay không)
+        String From = intent.getStringExtra("From");
+
+        if (From == null) {
+            // Nếu không đến từ PrivatePicturesActivity thì không cần sửa
+            lockedImage = false;
+        }
+        else // Nếu đến từ PrivatePicturesActivity
+        {
+            MenuItem ItemLock;
+            ItemLock = menu.findItem(R.id.action_lock);
+
+            // Sửa icon lock thành icon unlock
+            ItemLock.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.round_lock_open_24));
+
+            lockedImage = true;
+        }
+        // ---------------- KẾT THÚC CHỈNH ICON LOCK --------------
+
         return true;
     }
 
@@ -379,7 +410,39 @@ public class FullImageActivity extends AppCompatActivity {
         int id = item.getItemId();
         decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-        if (id == R.id.action_favorite) {
+        if (id == R.id.action_lock) {
+            // Note: cần xét lần đầu nhấn lock ảnh để hướng dẫn sử dụng
+            // Note: cần kiểm tra xem người dùng có muốn đặt pass hay k pass
+            // Note: chức năng thêm ảnh từ Fragment privatePictures
+            if (!lockedImage) // Nếu ảnh chưa được lock
+            {
+                // Nếu chưa có password sẽ được yêu cầu set password
+                if (myPrefs.getPassword().equals("")) {
+                    Toast.makeText(context, "You have to set password before locking an image", Toast.LENGTH_LONG).show();
+
+                    Intent intent = new Intent(FullImageActivity.this, SetPasswordActivity.class);
+                    intent.putExtra("From", "FullImageActivity"); // Lưu vị trí activity đến
+
+                    // Lưu những thông tin khác để có thể trở về FullImageActivity
+                    intent.putExtra("id", position);
+                    intent.putExtra("path", currentImage);
+                    intent.putExtra("allPath", PicturesActivity.images);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    LockPicture();
+                    Toast.makeText(context, "Successfully lock the image. The image has been moved to Private Pictures", Toast.LENGTH_LONG).show();
+                }
+            }
+            else // Nếu ảnh đã được lock
+            {
+                // Note: cần hỏi người dùng có chắc là muốn unlock không (dialog)
+
+                UnlockPicture();
+                Toast.makeText(context, "Successfully unlock the image", Toast.LENGTH_SHORT).show();
+            }
+            return true;
+        } else if (id == R.id.action_favorite) {
             if (favoritedImage) {
                 MenuView.ItemView favorite_button;
                 favorite_button = findViewById(R.id.action_favorite);
@@ -410,6 +473,7 @@ public class FullImageActivity extends AppCompatActivity {
             editor.putString("savedFavoriteImages", json);
             //editor.commit();
             editor.apply();
+
             return true;
         } else if (id == R.id.action_upload) {
             ConnectivityManager conMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -478,11 +542,13 @@ public class FullImageActivity extends AppCompatActivity {
             Intent newIntentForSlideShowActivity = new Intent(context, SlideShowActivity.class);
             newIntentForSlideShowActivity.putExtra("id", position); // Lấy position id và truyền cho SlideShowActivity
             startActivity(newIntentForSlideShowActivity);
+
             return true;
         } else if (id == R.id.action_rotate) {
             //imageView.setRotation(imageView.getRotation() + 90);
             Toast.makeText(context, "This function is down", Toast.LENGTH_SHORT).show();
 
+            return true;
         } else if (id == R.id.action_setAs) {
             Intent intent = new Intent(Intent.ACTION_ATTACH_DATA);
             intent.addCategory(Intent.CATEGORY_DEFAULT);
@@ -491,37 +557,11 @@ public class FullImageActivity extends AppCompatActivity {
             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.putExtra("mimeType", "image/*");
             this.startActivity(Intent.createChooser(intent, "Set as:"));
+
             return true;
         } else if (id == R.id.action_print) {
-            File lockPicture = new File(currentImage);
-            File folder = new File(Environment.getExternalStorageDirectory(), "/ITUSGallery");
+            Toast.makeText(context, "This feature is under development!", Toast.LENGTH_SHORT).show();
 
-            boolean success = true;
-            if (!folder.exists()) {
-                success = folder.mkdirs();
-            }
-            if (success) {
-                //Toast.makeText(context, "Có", Toast.LENGTH_SHORT).show();
-            }
-            else {
-                //Toast.makeText(context, "Không", Toast.LENGTH_SHORT).show();
-            }
-
-            try {
-                MoveFile(lockPicture, folder);
-                File file = new File(folder.getAbsolutePath() + "/" + lockPicture.getName());
-
-                // Đổi file extension
-                String temp = folder.getAbsolutePath() + "/" + lockPicture.getName();
-                int IndexOfDot; // Vị trí của dấu chấm (type, ví dụ .png .jpg)
-                IndexOfDot = temp.lastIndexOf(".");
-                temp = temp.substring(0, IndexOfDot - 1) + '#' + temp.substring(IndexOfDot + 1);
-
-                File newName = new File(temp);
-                file.renameTo(newName);
-            } catch(IOException ex) {
-                //Do something with the exception
-            }
             return true;
         } else if (id == R.id.action_details) {
             String returnUri = currentImage;
@@ -809,6 +849,8 @@ public class FullImageActivity extends AppCompatActivity {
                 editor.apply();
             }
             //Số ảnh còn lại trước khi xóa
+
+            // Chỉnh thành lockedImage thì mới sửa
             int currentNumberOfPictures = PicturesActivity.images.size();
             if (currentNumberOfPictures == 1) {
                 adapter.removeItem(position);
@@ -829,6 +871,127 @@ public class FullImageActivity extends AppCompatActivity {
             if (inputChannel != null) inputChannel.close();
             if (outputChannel != null) outputChannel.close();
         }
+    }
 
+    private void LockPicture()
+    {
+        File lockPicture = new File(currentImage);
+        File folder = new File(Environment.getExternalStorageDirectory(), "/.ITUSGallery");
+        File nomedia = new File(folder.getAbsolutePath() + "/" + ".nomedia");
+
+        //boolean success = true;
+
+        // Nếu folder k tồn tại thì tạo folder, nếu có rồi thì k cần tạo nữa
+        if (!folder.exists()) {
+            folder.mkdirs();
+            // success = folder.mkdirs();
+        }
+
+        // Nếu .nomedia File k tồn tại thì tạo mới, nếu có rồi thì k cần tạo nữa
+        try {
+            nomedia.createNewFile();
+        } catch (IOException ex) {
+            // do something
+        }
+
+        // ----------- QUAN TRỌNG VỀ SAU (LƯU LẠI) -----------
+//           if (success) {
+//              // Nếu tạo folder ITUSGallery lần đầu
+//           }
+//           else {
+//                //Toast.makeText(context, "Không", Toast.LENGTH_SHORT).show();
+//           }
+
+        try {
+            // Lưu tên và đường dẫn cũ vào file txt
+            File txt = new File(folder.getAbsolutePath() + "/don't delete this file or this folder.txt");
+
+            String Buffer = "";
+
+            // Nếu file đã tồn tại thì đọc nội dung file cũ
+            if (txt.exists()) {
+                BufferedReader myReader = new BufferedReader(new FileReader(txt));
+
+                String line;
+
+                while ((line = myReader.readLine()) != null) {
+                    Buffer += line + '\n';
+                }
+
+                myReader.close();
+            }
+
+            // Tạo chuỗi dữ liệu để xuất vào file .txt
+            OutputStreamWriter myOutWriter = new OutputStreamWriter(new FileOutputStream(txt));
+            myOutWriter.append(Buffer); // Ghi nội dung cũ vào chuỗi dữ liệu dùng để xuất
+            // Lưu tên vào file txt để dễ kiểm tra
+            myOutWriter.append(lockPicture.getAbsolutePath()); // Lưu đường dẫn cũ
+            myOutWriter.append('\n');
+            myOutWriter.close();
+
+            // Di chuyển file về thư mục .ITUSGallery
+            MoveFile(lockPicture, folder);
+
+        } catch(IOException ex) {
+            Toast.makeText(context, "Your storage doesn't have enough space, clear your storage to continue!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void UnlockPicture()
+    {
+        File unlockPicture = new File(currentImage);
+        File folder = new File(Environment.getExternalStorageDirectory(), "/.ITUSGallery");
+
+        try
+        {
+            File txt = new File(folder.getAbsolutePath() + "/don't delete this file or this folder.txt");
+
+            String data = "";
+            String Buffer = "";
+
+            // Nếu file có tồn tại thì đọc nội dung file
+            if (txt.exists()) {
+                BufferedReader myReader = new BufferedReader(new FileReader(txt));
+
+                String line;
+
+                while ((line = myReader.readLine()) != null) {
+                    if (line.contains(unlockPicture.getName())) // Nếu kiếm được 1 dòng chứa tên của ảnh cần unlock
+                    {
+                        // Lấy đường dẫn cũ cắt đi tên để tạo ra đường dẫn thư mục cũ
+                        data = line.substring(0, line.indexOf(unlockPicture.getName()));
+                    }
+                    else
+                    {
+                        // Nếu không kiếm được tên của ảnh của unlock thì vẫn cập nhật Buffer như thường
+                        // -> nếu kiếm được thì không thêm vào buffer -> sẽ xoá được đường dẫn cũ của ảnh khỏi Buffer
+                        Buffer += line + '\n';
+                    }
+                }
+                myReader.close();
+
+                // Cập nhật lại file .txt sau khi xoá bớt dữ liệu
+                OutputStreamWriter myOutWriter = new OutputStreamWriter(new FileOutputStream(txt));
+                myOutWriter.append(Buffer);
+                myOutWriter.close();
+
+                if (data != "") // nếu data khác rỗng thì thực thi
+                {
+                    File StoredDirectory = new File(data); // Đường dẫn cũ của ảnh được lưu trong file .txt
+                    // Di chuyển file về thư mục ban đầu chứa nó
+                    MoveFile(unlockPicture, StoredDirectory);
+                }
+                else // trường hợp data rỗng (có thể do lúc lock ảnh gặp lỗi)
+                {
+                    Toast.makeText(context, "Unable to unlock this image because of unknown errors!!!", Toast.LENGTH_LONG).show();
+                }
+            }
+            else // Nếu file .txt k tồn tại thì báo lỗi
+            {
+                Toast.makeText(context, "Unable to unlock this image because of missing files!!!", Toast.LENGTH_LONG).show();
+            }
+        } catch (IOException ex) {
+            Toast.makeText(context, "Your storage doesn't have enough space, clear your storage to continue!", Toast.LENGTH_LONG).show();
+        }
     }
 }

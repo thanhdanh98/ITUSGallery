@@ -22,11 +22,6 @@ public class PasswordActivity extends AppCompatActivity {
     MyPrefs myPrefs;
     Integer passMode;
 
-    private Toolbar toolBar;
-
-    FragmentTransaction ft;
-    PrivatePicturesActivity private_pictures;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         myPrefs = new MyPrefs(this);
