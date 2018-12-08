@@ -238,6 +238,13 @@ public class FullImageActivity extends AppCompatActivity {
                                 //---- Dưới đây là bài hướng dẫn xoá ảnh sử dụng ContentResolver trên diễn đàn stackoverflow ----
                                 // Nguồn: http://stackoverflow.com/a/20780472#1#L0
 
+                                // Nếu là ảnh đã bị khoá thì phải gọi Broadcast để scan lại thì mới xoá được
+                                if (lockedImage) {
+                                    photoFile.delete();
+
+                                    context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(new File(currentImage))));
+                                }
+
                                 // Lấy thông tin đường dẫn
                                 String selection = MediaStore.Images.Media.DATA + " = ?";
                                 String[] selectionArgs = new String[]{photoFile.getAbsolutePath()};
@@ -414,6 +421,8 @@ public class FullImageActivity extends AppCompatActivity {
             // Note: cần xét lần đầu nhấn lock ảnh để hướng dẫn sử dụng
             // Note: cần kiểm tra xem người dùng có muốn đặt pass hay k pass
             // Note: chức năng thêm ảnh từ Fragment privatePictures
+            // Note: lock ảnh nhớ chặn favorite
+
             if (!lockedImage) // Nếu ảnh chưa được lock
             {
                 // Nếu chưa có password sẽ được yêu cầu set password
@@ -443,6 +452,13 @@ public class FullImageActivity extends AppCompatActivity {
             }
             return true;
         } else if (id == R.id.action_favorite) {
+            if (lockedImage) // Nếu ảnh đã bị lock thì không cho người dùng thích
+            {
+                Toast.makeText(context, "You can't love the locked image. It won't be protected by password.", Toast.LENGTH_LONG).show();
+
+                return true; // rời khỏi hàm
+            }
+
             if (favoritedImage) {
                 MenuView.ItemView favorite_button;
                 favorite_button = findViewById(R.id.action_favorite);
@@ -818,25 +834,36 @@ public class FullImageActivity extends AppCompatActivity {
             inputChannel = new FileInputStream(file).getChannel();
             inputChannel.transferTo(0, inputChannel.size(), outputChannel);
             inputChannel.close();
+            outputChannel.close();
 
             // -------------- XOÁ ẢNH -----------------
             final File photoFile = new File(currentImage);
 
-            String selection = MediaStore.Images.Media.DATA + " = ?";
-            String[] selectionArgs = new String[]{photoFile.getAbsolutePath()};
+            // Nếu là ảnh đã bị khoá thì phải gọi Broadcast để scan lại thì mới xoá được
+            if (lockedImage) {
+                photoFile.delete();
 
-            ContentResolver contentResolver = getContentResolver();
-            Cursor c = contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                    new String[]{MediaStore.Images.Media._ID}, selection, selectionArgs, null);
-            if (c != null) {
-                if (c.moveToFirst()) {
-                    // Tìm thấy ID. Xoá ảnh dựa nhờ content provider
-                    long id = c.getLong(c.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
-                    Uri deleteUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
-                    contentResolver.delete(deleteUri, null, null);
-                }
-                c.close();
+                // cập nhật lại MediaStore
+                context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(new File(currentImage))));
             }
+            else {
+                String selection = MediaStore.Images.Media.DATA + " = ?";
+                String[] selectionArgs = new String[]{photoFile.getAbsolutePath()};
+
+                ContentResolver contentResolver = getContentResolver();
+                Cursor c = contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        new String[]{MediaStore.Images.Media._ID}, selection, selectionArgs, null);
+                if (c != null) {
+                    if (c.moveToFirst()) {
+                        // Tìm thấy ID. Xoá ảnh dựa nhờ content provider
+                        long id = c.getLong(c.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
+                        Uri deleteUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+                        contentResolver.delete(deleteUri, null, null);
+                    }
+                    c.close();
+                }
+            }
+
             // Nếu ảnh được yêu thích thì khi xoá ảnh phải xoá trong danh sách các ảnh được yêu thích luôn
             if (favoritedImage) {
                 FavoriteActivity.favoriteImages.remove(currentImage);
@@ -848,9 +875,8 @@ public class FullImageActivity extends AppCompatActivity {
                 editor.putString("savedFavoriteImages", json);
                 editor.apply();
             }
-            //Số ảnh còn lại trước khi xóa
 
-            // Chỉnh thành lockedImage thì mới sửa
+            //Số ảnh còn lại trước khi xóa
             int currentNumberOfPictures = PicturesActivity.images.size();
             if (currentNumberOfPictures == 1) {
                 adapter.removeItem(position);
@@ -877,7 +903,7 @@ public class FullImageActivity extends AppCompatActivity {
     {
         File lockPicture = new File(currentImage);
         File folder = new File(Environment.getExternalStorageDirectory(), "/.ITUSGallery");
-        File nomedia = new File(folder.getAbsolutePath() + "/" + ".nomedia");
+        File nomedia = new File(folder.getAbsolutePath(),"/.nomedia");
 
         //boolean success = true;
 
@@ -904,7 +930,7 @@ public class FullImageActivity extends AppCompatActivity {
 
         try {
             // Lưu tên và đường dẫn cũ vào file txt
-            File txt = new File(folder.getAbsolutePath() + "/don't delete this file or this folder.txt");
+            File txt = new File(folder.getAbsolutePath(), "/don't delete this file or this folder.txt");
 
             String Buffer = "";
 
@@ -944,10 +970,11 @@ public class FullImageActivity extends AppCompatActivity {
 
         try
         {
-            File txt = new File(folder.getAbsolutePath() + "/don't delete this file or this folder.txt");
+            File txt = new File(folder.getAbsolutePath(), "/don't delete this file or this folder.txt");
 
             String data = "";
             String Buffer = "";
+            String name = "";
 
             // Nếu file có tồn tại thì đọc nội dung file
             if (txt.exists()) {
@@ -960,6 +987,7 @@ public class FullImageActivity extends AppCompatActivity {
                     {
                         // Lấy đường dẫn cũ cắt đi tên để tạo ra đường dẫn thư mục cũ
                         data = line.substring(0, line.indexOf(unlockPicture.getName()));
+                        name = unlockPicture.getName();
                     }
                     else
                     {
@@ -978,8 +1006,13 @@ public class FullImageActivity extends AppCompatActivity {
                 if (data != "") // nếu data khác rỗng thì thực thi
                 {
                     File StoredDirectory = new File(data); // Đường dẫn cũ của ảnh được lưu trong file .txt
+
                     // Di chuyển file về thư mục ban đầu chứa nó
                     MoveFile(unlockPicture, StoredDirectory);
+
+                    // Sau khi di chuyển phải scan lại để album ảnh thấy
+                    context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE,
+                            Uri.fromFile(new File(StoredDirectory.getAbsolutePath(), "/" + name))));
                 }
                 else // trường hợp data rỗng (có thể do lúc lock ảnh gặp lỗi)
                 {
@@ -991,7 +1024,8 @@ public class FullImageActivity extends AppCompatActivity {
                 Toast.makeText(context, "Unable to unlock this image because of missing files!!!", Toast.LENGTH_LONG).show();
             }
         } catch (IOException ex) {
-            Toast.makeText(context, "Your storage doesn't have enough space, clear your storage to continue!", Toast.LENGTH_LONG).show();
+            Toast.makeText(context, ex.getMessage(), Toast.LENGTH_LONG).show();
+            //Toast.makeText(context, "Your storage doesn't have enough space, clear your storage to continue!", Toast.LENGTH_LONG).show();
         }
     }
 }

@@ -55,8 +55,9 @@ public class PasswordActivity extends AppCompatActivity {
                     else if(2 == passMode){
                         AlertDialog builder = new AlertDialog.Builder(PasswordActivity.this).create(); //Use context
                         builder.setTitle("Confirm");
-                        builder.setMessage("Do you want to delete your current password ?");
-                        builder.setButton(Dialog.BUTTON_POSITIVE,"Confirm", new DialogInterface.OnClickListener() {
+                        builder.setMessage("Your private pictures won't be protected by password and might be seen by somebody else \n" +
+                                "Are you sure you want to delete your current password ? ");
+                        builder.setButton(Dialog.BUTTON_POSITIVE,"Yes", new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog, int which) {
                                         myPrefs.setPassword("");
                                         Toast.makeText(PasswordActivity.this, "Password has been delete", Toast.LENGTH_SHORT).show();
@@ -65,7 +66,7 @@ public class PasswordActivity extends AppCompatActivity {
                                         finish();
                                     }
                                 });
-                        builder.setButton(Dialog.BUTTON_NEGATIVE,"Cancel", new DialogInterface.OnClickListener() {
+                        builder.setButton(Dialog.BUTTON_NEGATIVE,"No", new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog, int which) {
                                         dialog.cancel();
                                         startActivity(new Intent(PasswordActivity.this,MainActivity.class));
