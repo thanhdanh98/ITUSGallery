@@ -94,4 +94,14 @@ public class MyPrefs {
     int loadEndMinute(){
         return myPrefs.getInt("EndMinute", 0);
     }
+
+    public void isFirstLaunch(boolean isFirst){
+        SharedPreferences.Editor editor = myPrefs.edit();
+        editor.putBoolean("FirstLaunch",isFirst);
+        editor.apply();
+    }
+
+    public boolean loadIsFirstLaunch(){
+        return myPrefs.getBoolean("FirstLaunch", true);
+    }
 }

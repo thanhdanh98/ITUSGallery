@@ -52,6 +52,9 @@
         <activity android:name="hcmus.mdsd.itusgallery.LoginCloudActivity" />
         <activity android:name="hcmus.mdsd.itusgallery.LogoutCloudActivity"/>
         <activity android:name="hcmus.mdsd.itusgallery.NightmodeActivity"/>
+        <activity android:name=".TutorialActivity"
+            android:theme="@style/DayNoActionBarTheme"
+            android:screenOrientation="portrait"/>
 
         <provider
             android:name="android.support.v4.content.FileProvider"
