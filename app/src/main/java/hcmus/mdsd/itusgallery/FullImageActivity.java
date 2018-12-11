@@ -495,23 +495,20 @@ public class FullImageActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.action_upload) {
             ConnectivityManager conMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            assert conMgr != null;
             NetworkInfo activeNetwork = conMgr.getActiveNetworkInfo();
-            if (MainActivity._name_cloud.equals("")) {
-                Toast.makeText(context, "Login to Cloud Storage to upload images", Toast.LENGTH_SHORT).show();
-            } else {
-                if (activeNetwork != null && activeNetwork.isConnected()) {
+            if(MainActivity._name_cloud==""){
+                Toast.makeText(FullImageActivity.this, "Đăng nhập Cloud Storage để sao lưu ảnh", Toast.LENGTH_SHORT).show();
 
+            }
+            else{
+                if (activeNetwork != null && activeNetwork.isConnected()) {
+                    mData= database.getReference(MainActivity._name_cloud);
                     storageRef = storage.getReference(MainActivity._name_cloud);
-                    mData = database.getReference(MainActivity._name_cloud);
 
                     Intent i = getIntent();
-                    String filePath = Objects.requireNonNull(i.getExtras()).getString("path");
-                    assert filePath != null;
+                    String filePath = i.getExtras().getString("path");
                     final String imgName = new File(filePath).getName();
-
                     StorageReference mountainsRef = storageRef.child(imgName);
-//
                     Bitmap bitmap = BitmapFactory.decodeFile(PicturesActivity.images.get(position));
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
@@ -520,35 +517,37 @@ public class FullImageActivity extends AppCompatActivity {
                     uploadTask.addOnFailureListener(new OnFailureListener() {
                         @Override
                         public void onFailure(@NonNull Exception exception) {
-                            Toast.makeText(context, "Lưu ảnh không thành công", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(FullImageActivity.this, "Lưu ảnh không thành công", Toast.LENGTH_SHORT).show();
 
                         }
                     }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            Toast.makeText(context, "Lưu ảnh thành công", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(FullImageActivity.this, "Lưu ảnh thành công", Toast.LENGTH_SHORT).show();
 
                             Task<Uri> urlTask = taskSnapshot.getStorage().getDownloadUrl();
-                            //while (!urlTask.isSuccessful()) ;
+                            while (!urlTask.isSuccessful());
                             Uri downloadUrl = urlTask.getResult();
                             CloudImage con = new CloudImage(imgName, downloadUrl.toString());
                             mData.push().setValue(con, new DatabaseReference.CompletionListener() {
                                 @Override
                                 public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
-                                    if (databaseError == null) {
-                                        Toast.makeText(context, "Lưu dữ liệu thành công", Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        Toast.makeText(context, "Lưu dữ liệu không thành công", Toast.LENGTH_SHORT).show();
+                                    if(databaseError==null){
+                                        Toast.makeText(FullImageActivity.this, "Lưu dữ liệu thành công", Toast.LENGTH_SHORT).show();
+                                    }
+                                    else {
+                                        Toast.makeText(FullImageActivity.this, "Lưu dữ liệu không thành công", Toast.LENGTH_SHORT).show();
+
                                     }
                                 }
                             });
                         }
                     });
                 } else {
-                    Toast.makeText(context, "Kiểm tra kết nối internet của bạn", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(FullImageActivity.this, "Kiểm tra kết nối internet của bạn", Toast.LENGTH_SHORT).show();
+
                 }
             }
-
             return true;
         } else if (id == R.id.action_slideshow) {
             // perform SLIDESHOW operations...

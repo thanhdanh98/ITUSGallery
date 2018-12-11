@@ -7,6 +7,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -36,8 +37,6 @@ public class CloudStorageActivity extends Fragment{
     FirebaseDatabase database = FirebaseDatabase.getInstance();
     DatabaseReference mData;
 
-
-
     public static CloudStorageActivity newInstance() {
         return new CloudStorageActivity();
     }
@@ -65,12 +64,12 @@ public class CloudStorageActivity extends Fragment{
                 Toast.makeText(getContext(), "Đăng nhập để xem ảnh", Toast.LENGTH_SHORT).show();
             }
             else{
+                Toast.makeText(getContext(), "xem ảnh", Toast.LENGTH_SHORT).show();
                 loadData();
             }
         } else {
             Toast.makeText(getContext(), "Check your internet connection and try again.", Toast.LENGTH_SHORT).show();
         }
-
 
         return cloud;
     }

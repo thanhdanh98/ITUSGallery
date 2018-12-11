@@ -73,13 +73,12 @@ public class CreateCloudActivity extends AppCompatActivity {
                     }
                 }
             });
-            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-            startActivity(intent);
+//            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+//            startActivity(intent);
         }
         else {
             Toast.makeText(CreateCloudActivity.this, "Nhập lại mật khẩu chưa đúng", Toast.LENGTH_SHORT).show();
         }
-
 
     }
 }
