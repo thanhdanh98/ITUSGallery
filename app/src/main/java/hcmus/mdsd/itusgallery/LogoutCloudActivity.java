@@ -8,60 +8,55 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 
 public class LogoutCloudActivity extends AppCompatActivity {
-    EditText edtname,edtpass, edtpass2;
+    TextView txtname;
     Button btnlogout,btnexit;
-    ArrayList<CloudUsers> arrayCloudUsers;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_logout_cloud);
-        edtname =(EditText) findViewById(R.id.name_Cloud3);
-        edtpass =(EditText) findViewById(R.id.pass_Cloud3);
-        edtpass2 =(EditText) findViewById(R.id.pass_again);
+        txtname = (TextView) findViewById(R.id.textViewOut);
         btnlogout =(Button) findViewById(R.id.button_Logout);
         btnexit =(Button) findViewById(R.id.button_Exit3);
-        arrayCloudUsers=new ArrayList<>();
+        txtname.setText("Bạn muốn thoát tài khoản " + MainActivity._email_cloud + " ?");
+
         btnlogout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String namecloud = edtname.getText().toString().trim();
-                String passcloud = edtpass.getText().toString().trim();
-                String passcloud2 = edtpass2.getText().toString().trim();
-                if(checkLogout(arrayCloudUsers, namecloud, passcloud, passcloud2)){
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                    SharedPreferences.Editor editor = sharedPreferences.edit();
-                    editor.putString("name_cloud", MainActivity._name_cloud);
-                    editor.apply();
-                    Toast.makeText(LogoutCloudActivity.this,"Đăng xuất thành công",Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                    startActivity(intent);
-                }
-                else{
-                    Toast.makeText(LogoutCloudActivity.this,"Đăng xuất không thành công",Toast.LENGTH_SHORT).show();
-                }
-//
+                FirebaseAuth.getInstance().signOut();
+                MainActivity._name_cloud="";
+                MainActivity._email_cloud="";
+
+                SharedPreferences sharedPreferences2 = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                SharedPreferences.Editor editor2 = sharedPreferences2.edit();
+                editor2.putString("name_cloud", MainActivity._name_cloud);
+                editor2.commit();
+
+                SharedPreferences sharedPreferences3 = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                SharedPreferences.Editor editor3 = sharedPreferences3.edit();
+                editor3.putString("email_cloud", MainActivity._email_cloud);
+                editor3.commit();
+
+                Toast.makeText(LogoutCloudActivity.this, "Đăng xuất thành công thành công", Toast.LENGTH_SHORT).show();
+
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intent);
             }
         });
-    }
-    private boolean checkLogout(ArrayList<CloudUsers> arrayList, String name, String pass , String pass2){
-//        int temp=0;
-//        for(int i=0;i<arrayList.size();i++){
-//            if(arrayList.get(i).NameCloud.equals(name) && arrayList.get(i).PassCloud.equals(pass)&& pass.equals(pass2))
-//               LoginCloudActivity._name_cloud="";
-//                temp=1;
-//        }
-//        if(temp==1){
-//            return true;
-//        }
-//        return false;
-        //        chưa lấy được usename và password từ database nên tạm thời return true;
-        MainActivity._name_cloud="";
-        //_pass_cloud=pass;
-        return true;
+
+        btnexit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 }

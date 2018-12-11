@@ -40,7 +40,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     PrivatePicturesActivity private_pictures;
 
     private int codeOfFragment;
-    public static String _name_cloud ="";
+    public static String _name_cloud = "";
+    public static String _email_cloud ="";
 
     @Override
     protected void onSaveInstanceState (Bundle outState) {
@@ -62,7 +63,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         SharedPreferences sharedPreferences2 = PreferenceManager
                 .getDefaultSharedPreferences(getApplicationContext());
-        MainActivity._name_cloud = sharedPreferences2.getString("name_cloud","");
+        MainActivity._name_cloud = sharedPreferences2.getString("name_cloud", "");
+
+        SharedPreferences sharedPreferences3 = PreferenceManager
+                .getDefaultSharedPreferences(getApplicationContext());
+        MainActivity._email_cloud = sharedPreferences3.getString("email_cloud","");
 
         Type type = new TypeToken<ArrayList<String>>(){}.getType();
         favoriteImages = gson.fromJson(json, type);
@@ -177,6 +182,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (id == R.id.action_search) {
             // perform SEARCH operations...
             Toast.makeText(getApplicationContext(), "This function is still under development", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        if (id == R.id.action_camera) {
+            // perform CAMERA operations...
+            startActivity(new Intent(getApplicationContext(),FaceActivity.class));
             return true;
         }
         return false;

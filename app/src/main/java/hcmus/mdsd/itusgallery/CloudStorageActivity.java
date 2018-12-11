@@ -18,6 +18,8 @@ import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -30,11 +32,9 @@ public class CloudStorageActivity extends Fragment{
     ArrayList<CloudImage> arrayCloudImage;
     CloudImageAdapter adapter=null;
 
-    public static String nameCloud;
-    public  static String nameData;
 
-    //FirebaseDatabase database = FirebaseDatabase.getInstance();
-    //DatabaseReference mData = database.getReference("CloudImage");
+    FirebaseDatabase database = FirebaseDatabase.getInstance();
+    DatabaseReference mData;
 
 
 
@@ -113,11 +113,14 @@ public class CloudStorageActivity extends Fragment{
 
 
     private  void loadData(){
-        FullImageActivity.mData.keepSynced(true);
-        FullImageActivity.mData.addValueEventListener(new ValueEventListener() {
+        mData = database.getReference(MainActivity._name_cloud);
+        mData.keepSynced(true);
+        mData.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot dataSnapshotChild : dataSnapshot.getChildren()) {
+                Iterator<DataSnapshot> dataSnapshots = dataSnapshot.getChildren().iterator();
+                while (dataSnapshots.hasNext()) {
+                    DataSnapshot dataSnapshotChild = dataSnapshots.next();
                     CloudImage item = dataSnapshotChild.getValue(CloudImage.class);
                     arrayCloudImage.add(item);
                     adapter.notifyDataSetChanged();
@@ -130,19 +133,18 @@ public class CloudStorageActivity extends Fragment{
         });
     }
     public void openCreateCloudActivity() {
-        //Intent intent = new Intent(this,CloudStorageActivity.class);
+
         Intent intent = new Intent(this.getActivity(), CreateCloudActivity.class);
         startActivity(intent);
     }
 
     public void openLoginCloudActivity() {
-        //Intent intent = new Intent(this,CloudStorageActivity.class);
+
         Intent intent = new Intent(this.getActivity(), LoginCloudActivity.class);
         startActivity(intent);
     }
 
     public void openLogoutCloudActivity() {
-        //Intent intent = new Intent(this,CloudStorageActivity.class);
         Intent intent = new Intent(this.getActivity(), LogoutCloudActivity.class);
         startActivity(intent);
     }

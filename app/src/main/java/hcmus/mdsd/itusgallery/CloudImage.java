@@ -2,7 +2,7 @@ package hcmus.mdsd.itusgallery;
 
 public class CloudImage {
     String NameImage;
-    private String LinkImage;
+    String LinkImage;
 
     public CloudImage(){
 

@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
@@ -74,10 +75,11 @@ import java.util.Objects;
 
 public class FullImageActivity extends AppCompatActivity {
     //Firebase
-    public static FirebaseDatabase database = FirebaseDatabase.getInstance();
-    public static DatabaseReference mData;
-    public static FirebaseStorage storage = FirebaseStorage.getInstance();
-    public static StorageReference storageRef;
+    FirebaseDatabase database = FirebaseDatabase.getInstance();
+    DatabaseReference mData;
+
+    FirebaseStorage storage = FirebaseStorage.getInstance();
+    StorageReference storageRef;
     //Thuộc tính ảnh được yêu thích hay không
     static boolean favoritedImage = false;
     static boolean lockedImage = false;
@@ -509,13 +511,8 @@ public class FullImageActivity extends AppCompatActivity {
                     final String imgName = new File(filePath).getName();
 
                     StorageReference mountainsRef = storageRef.child(imgName);
-                    ImageView imageView = new ImageView(this);
-                    Glide.with(getApplicationContext())
-                            .load(currentImage)
-                            .into(imageView);
-                    imageView.setDrawingCacheEnabled(true);
-                    imageView.buildDrawingCache();
-                    Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+//
+                    Bitmap bitmap = BitmapFactory.decodeFile(PicturesActivity.images.get(position));
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
                     byte[] data = baos.toByteArray();
@@ -532,7 +529,7 @@ public class FullImageActivity extends AppCompatActivity {
                             Toast.makeText(context, "Lưu ảnh thành công", Toast.LENGTH_SHORT).show();
 
                             Task<Uri> urlTask = taskSnapshot.getStorage().getDownloadUrl();
-                            while (!urlTask.isSuccessful()) ;
+                            //while (!urlTask.isSuccessful()) ;
                             Uri downloadUrl = urlTask.getResult();
                             CloudImage con = new CloudImage(imgName, downloadUrl.toString());
                             mData.push().setValue(con, new DatabaseReference.CompletionListener() {
