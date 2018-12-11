@@ -179,6 +179,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Toast.makeText(getApplicationContext(), "This function is still under development", Toast.LENGTH_SHORT).show();
             return true;
         }
+        if (id == R.id.action_camera) {
+            // perform CAMERA operations...
+            startActivity(new Intent(getApplicationContext(),FaceActivity.class));
+            return true;
+        }
         return false;
     }
 

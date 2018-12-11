@@ -46,4 +46,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-core:16.0.1'
     implementation 'com.google.code.gson:gson:2.8.2'
     implementation 'com.github.chrisbanes.photoview:library:1.2.4'
+
+    implementation 'com.google.android.gms:play-services-vision:15.0.1'
+
 }
